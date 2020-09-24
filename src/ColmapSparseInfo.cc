@@ -2,11 +2,9 @@
 // Created by lucius on 9/24/20.
 //
 #include <sstream>
-#include <fstream>
 #include <boost/algorithm/string.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/endian.hpp>
 #include "ColmapSparseInfo.hpp"
 
 namespace fs = boost::filesystem;
@@ -106,6 +104,10 @@ ColmapSparseInfo::ColmapSparseInfo() {
   } bint = {0x01020304};
 
   big = (bint.c[0] == 1);
+  if(big){
+    BOOST_LOG_TRIVIAL(fatal) << "we only support little endian";
+    exit(EXIT_FAILURE);
+  }
 }
 
 void ColmapSparseInfo::Read(const std::string &path) {
