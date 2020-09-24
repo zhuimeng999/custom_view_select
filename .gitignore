@@ -1,0 +1,5 @@
+/.idea/
+/cmake-build-debug/
+/scripts/arch/pkg/
+/scripts/arch/src/
+/scripts/arch/custom_view_select*.pkg.tar.zst
