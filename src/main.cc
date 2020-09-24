@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
   ColmapSparseInfo csi;
   BOOST_LOG_TRIVIAL(info) << "reading sparse reconstruction result ...";
   csi.Read(sparse_dir);
-  const auto num_image = csi.images_.size();
+  auto num_image = csi.images_.size();
 
   std::vector<ColmapSparseInfo::image_t> index2imageid;
   std::unordered_map<ColmapSparseInfo::image_t, uint64_t> imageid2index;
