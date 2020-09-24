@@ -12,6 +12,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED COMPONENTS filesystem program_options log)
 target_link_libraries(${PROJECT_NAME} Boost::filesystem Boost::program_options Boost::log)
+target_compile_definitions(${PROJECT_NAME} PUBLIC -DBOOST_LOG_DYN_LINK)
 
 find_package( OpenCV REQUIRED )
 target_include_directories( ${PROJECT_NAME} SYSTEM PUBLIC ${OpenCV_INCLUDE_DIRS} )
