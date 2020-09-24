@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.9)
 project(custom_view_select)
 
 set(CMAKE_CXX_STANDARD 17)
