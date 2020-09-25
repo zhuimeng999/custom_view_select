@@ -9,10 +9,10 @@
 
 namespace po = boost::program_options;
 
-const double angle_sigma1 = 1;
-const double angle_sigma2 = 10;
-const double angle_theta = 5;
-const int num_view = 10;
+double angle_sigma1 = 1;
+double angle_sigma2 = 10;
+double angle_theta = 5;
+int num_view = 10;
 
 std::string in_image_dir;
 std::string sparse_dir;
@@ -26,13 +26,18 @@ void parse_commandline(int argc, char *argv[])
     desc.add_options()("help,h", "Help screen")
         ("in_image_dir", po::value<std::string>(), "in_image_dir")
         ("sparse_dir", po::value<std::string>(), "sparse_dir")
-        ("output_dir", po::value<std::string>(), "output_dir");
+        ("output_dir", po::value<std::string>(), "output_dir")
+        ("sigma1", po::value<double>(), "sigma1")
+        ("sigma2", po::value<double>(), "sigma2")
+        ("theta", po::value<double>(), "theta")
+        ("num_view", po::value<int>(), "num_view");
 
     po::positional_options_description pos_desc;
     pos_desc.add("in_image_dir", 1).add("sparse_dir", 1).add("output_dir", 1);
 
     po::command_line_parser parser{argc, argv};
-    parser.options(desc).positional(pos_desc).allow_unregistered();
+//    parser.options(desc).positional(pos_desc).allow_unregistered();
+    parser.options(desc).positional(pos_desc);
     po::parsed_options parsed_options = parser.run();
 
     po::variables_map vm;
@@ -61,6 +66,19 @@ void parse_commandline(int argc, char *argv[])
       exit(EXIT_FAILURE);
     } else {
       output_dir = vm["output_dir"].as<std::string>();
+    }
+
+    if (vm.count("sigma1")){
+      angle_sigma1 = vm["sigma1"].as<double>();
+    }
+    if (vm.count("sigma2")){
+      angle_sigma2 = vm["sigma2"].as<double>();
+    }
+    if (vm.count("theta")){
+      angle_theta = vm["theta"].as<double>();
+    }
+    if (vm.count("num_view")){
+      num_view = vm["num_view"].as<double>();
     }
   }
   catch (const po::error &ex)
