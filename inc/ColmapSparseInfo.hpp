@@ -37,6 +37,14 @@ public:
     std::vector<Eigen::Vector2d> points2D;
     std::vector<point3D_t> point3D_ids;
 
+    /* extra info */
+    Eigen::Matrix4d extr;
+    Eigen::Matrix3d intr;
+    Eigen::Vector3d centor;
+    Eigen::Vector3d direction;
+    double depth_min;
+    double depth_max;
+
     void NormalizeQvec() {
       auto qn = Qvec.norm();
       if (qn == 0.0) {
@@ -57,8 +65,14 @@ public:
 
   ColmapSparseInfo();
 
+  void BuildContinueIndex();
+
+  void ComputeExtraInfo();
+
   void Read(const std::string &path);
+
   void ReadText(const std::string &path);
+
   void ReadBinary(const std::string &path);
 
   static int GetModelId(const std::string &model_name);
@@ -68,6 +82,10 @@ public:
   std::unordered_map<camera_t, Camera> cameras_;
   std::unordered_map<image_t, Image> images_;
   std::unordered_map<point3D_t, Point3D> points3D_;
+
+  /*image index mapper*/
+  std::vector<image_t> index2imageid;
+  std::unordered_map<image_t, uint32_t> imageid2index;
 private:
 
   void WriteText(const std::string &path) const;

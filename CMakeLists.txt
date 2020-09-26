@@ -5,7 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(inc)
 
-add_executable(${PROJECT_NAME} src/main.cc src/ColmapSparseInfo.cc inc/ColmapSparseInfo.hpp src/MVSNetParser.cc inc/MVSNetParser.hpp)
+add_executable(${PROJECT_NAME} src/main.cc
+  src/ColmapSparseInfo.cc inc/ColmapSparseInfo.hpp
+  src/MVSNetParser.cc inc/MVSNetParser.hpp
+  src/Options.cc inc/Options.hpp
+  src/MVSNetViewSelect.cc inc/MVSNetViewSelect.hpp
+  src/ColmapViewSelect.cc inc/ColmapViewSelect.hpp)
 
 find_package(Eigen3 REQUIRED)
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIRS})

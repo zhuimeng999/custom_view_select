@@ -104,7 +104,7 @@ ColmapSparseInfo::ColmapSparseInfo() {
   } bint = {0x01020304};
 
   big = (bint.c[0] == 1);
-  if(big){
+  if (big) {
     BOOST_LOG_TRIVIAL(fatal) << "we only support little endian";
     exit(EXIT_FAILURE);
   }
@@ -126,13 +126,13 @@ void ColmapSparseInfo::Read(const std::string &path) {
 }
 
 const std::vector<std::pair<std::string, int>> CAMERA_INFOS = {
-        {"SIMPLE_PINHOLE", 3},  // 0
-        {"PINHOLE",        4},         // 1
-        {"SIMPLE_RADIAL",  4},   // 2
-        {"RADIAL",         5},          // 3
-        {"OPENCV",         8},          // 4
-        {"OPENCV_FISHEYE", 8},  // 5
-        {"FULL_OPENCV",    12}     //6
+    {"SIMPLE_PINHOLE", 3},  // 0
+    {"PINHOLE",        4},         // 1
+    {"SIMPLE_RADIAL",  4},   // 2
+    {"RADIAL",         5},          // 3
+    {"OPENCV",         8},          // 4
+    {"OPENCV_FISHEYE", 8},  // 5
+    {"FULL_OPENCV",    12}     //6
 };
 
 int ColmapSparseInfo::GetModelId(const std::string &model_name) {
@@ -189,6 +189,53 @@ Eigen::Matrix3d ColmapSparseInfo::Camera::GetK() const {
 }
 
 const ColmapSparseInfo::point3D_t ColmapSparseInfo::kInvalidPoint3DId = std::numeric_limits<ColmapSparseInfo::point3D_t>::max();
+
+void ColmapSparseInfo::BuildContinueIndex() {
+  index2imageid.reserve(images_.size());
+  imageid2index.reserve(images_.size());
+
+  std::vector<const ColmapSparseInfo::Image *> image_vecotor;
+  image_vecotor.reserve(images_.size());
+  for (const auto &it: images_) {
+    image_vecotor.push_back(&it.second);
+  }
+  std::sort(image_vecotor.begin(), image_vecotor.end(),
+            [](const ColmapSparseInfo::Image *x, const ColmapSparseInfo::Image *y) {
+                return x->image_id < y->image_id;
+            });
+  for (const auto it: image_vecotor) {
+    imageid2index.emplace(it->image_id, index2imageid.size());
+    index2imageid.push_back(it->image_id);
+  }
+}
+
+void ColmapSparseInfo::ComputeExtraInfo() {
+#pragma omp parallel for default(none)
+  for (auto i = 0; i < index2imageid.size(); i++) {
+    auto &image = images_[index2imageid[i]];
+    Eigen::Matrix4d extr = Eigen::Matrix4d::Identity();
+    Eigen::Matrix3d intr = Eigen::Matrix3d::Identity();
+
+    const auto &R = Eigen::Quaterniond(image.Qvec.x(), image.Qvec.y(), image.Qvec.z(),
+                                       image.Qvec.w()).toRotationMatrix();
+    extr.block(0, 0, 3, 3) = R;
+    extr.block(0, 3, 3, 1) = image.Tvec;
+
+    std::vector<double> depths;
+    for (auto it: image.point3D_ids) {
+      if (it != ColmapSparseInfo::kInvalidPoint3DId) {
+        depths.push_back(R.row(2).dot(points3D_[it].XYZ) + image.Tvec.z());
+      }
+    }
+    std::sort(depths.begin(), depths.end());
+    image.extr = extr;
+    image.intr = cameras_[image.camera_id].GetK();
+    image.centor = -R.transpose() * image.Tvec;
+    image.direction = R.col(2);
+    image.depth_min = depths[static_cast<int>(depths.size() * 0.01)];
+    image.depth_max = depths[static_cast<int>(depths.size() * 0.99)];
+  }
+}
 
 void ColmapSparseInfo::ReadText(const std::string &path) {
   ReadCamerasText(path + "/cameras.txt");
