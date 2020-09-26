@@ -38,11 +38,11 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::vector<int>> score_sorted(num_image);
 
-#pragma omp parallel for default(none) shared(score_sorted, score_matrix, num_image)
-  for (auto i = 0; i < num_image; i++) {
-    score_sorted[i].resize(num_image);
+#pragma omp parallel for default(none) shared(score_sorted, score_matrix)
+  for (auto i = 0; i < score_sorted.size(); i++) {
+    score_sorted[i].resize(score_sorted.size());
     const auto &scores = score_matrix[i];
-    for (int j = 0; j < num_image; j++) {
+    for (int j = 0; j < score_sorted.size(); j++) {
       score_sorted[i][j] = j;
     }
     std::sort(score_sorted[i].begin(), score_sorted[i].end(),
