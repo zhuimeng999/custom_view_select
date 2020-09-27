@@ -45,28 +45,20 @@ void parse_commandline(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    if ((vm.count("in_image_dir") == 0) or (vm.count("sparse_dir") == 0) or (vm.count("output_dir"))) {
+    if (options.in_image_dir.empty() or options.sparse_dir.empty() or options.output_dir.empty()) {
       BOOST_LOG_TRIVIAL(error) << "you must provide [in_image_dir sparse_dir output_dir]";
       exit(EXIT_FAILURE);
     }
 
-    if (vm.count("alg")) {
-      options.alg = vm["alg"].as<std::string>();
-      if ((options.alg != "mvsnet") and (options.alg != "colmap")) {
-        BOOST_LOG_TRIVIAL(error) << "only {mvsnet, colmap} are support, got " << options.alg;
-        exit(EXIT_FAILURE);
-      }
+    if ((options.alg != "mvsnet") and (options.alg != "colmap")) {
+      BOOST_LOG_TRIVIAL(error) << "only {mvsnet, colmap} are support, got " << options.alg;
+      exit(EXIT_FAILURE);
     }
-
-    if (vm.count("kTriangulationAnglePercentile")) {
-      options.kTriangulationAnglePercentile = vm["kTriangulationAnglePercentile"].as<double>();
-      if ((options.kTriangulationAnglePercentile < 0) or (options.kTriangulationAnglePercentile > 100)) {
-        BOOST_LOG_TRIVIAL(error) << "kTriangulationAnglePercentile must between [0, 100], got "
-                                 << options.kTriangulationAnglePercentile;
-        exit(EXIT_FAILURE);
-      }
+    if ((options.kTriangulationAnglePercentile < 0) or (options.kTriangulationAnglePercentile > 100)) {
+      BOOST_LOG_TRIVIAL(error) << "kTriangulationAnglePercentile must between [0, 100], got "
+                               << options.kTriangulationAnglePercentile;
+      exit(EXIT_FAILURE);
     }
-
   }
   catch (const po::error &ex) {
     BOOST_LOG_TRIVIAL(error) << ex.what() << '\n';
