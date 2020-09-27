@@ -22,6 +22,8 @@ void parse_commandline(int argc, char *argv[]) {
         ("sigma1", po::value<double>(), "sigma1")
         ("sigma2", po::value<double>(), "sigma2")
         ("theta", po::value<double>(), "theta")
+        ("max_d", po::value<uint32_t>(), "max_d")
+        ("interval_scale", po::value<double>(), "interval_scale")
         ("kTriangulationAnglePercentile", po::value<double>(), "kTriangulationAnglePercentile")
         ("min_triangulation_angle", po::value<double>(), "min_triangulation_angle");
 
@@ -79,6 +81,12 @@ void parse_commandline(int argc, char *argv[]) {
     }
     if (vm.count("theta")) {
       options.angle_theta = vm["theta"].as<double>();
+    }
+    if (vm.count("max_d")) {
+      options.max_d = vm["max_d"].as<uint32_t>();
+    }
+    if (vm.count("interval_scale")) {
+      options.interval_scale = vm["interval_scale"].as<double>();
     }
     if (vm.count("kTriangulationAnglePercentile")) {
       options.kTriangulationAnglePercentile = vm["kTriangulationAnglePercentile"].as<double>();

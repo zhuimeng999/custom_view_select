@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     }
   }
   pairWriter.WritePair(options.output_dir + "/pair.txt");
-  pairWriter.WriteCams(options.output_dir + "/cams", csi, 32);
+  pairWriter.WriteCams(options.output_dir + "/cams", csi, options.max_d);
   pairWriter.WriteImages(options.output_dir + "/images", options.in_image_dir, csi);
   BOOST_LOG_TRIVIAL(info) << "done ...";
 //  MVSNetParser pairReader;

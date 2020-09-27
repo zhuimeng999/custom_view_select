@@ -8,6 +8,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <fstream>
 #include "MVSNetParser.hpp"
+#include "Options.hpp"
 
 void MVSNetParser::ReadPair(const std::string &path) {
   std::ifstream in(path);
@@ -81,7 +82,8 @@ void MVSNetParser::WriteCams(const std::string &cam_dir, const ColmapSparseInfo 
           << " " << image.intr(j, 2) << std::endl;
     }
     out << std::endl;
-    double internal = (image.depth_max - image.depth_min) / max_d;
+    double internal = (image.depth_max - image.depth_min) / (max_d - 1);
+    internal =  internal/ options.interval_scale;
     out << image.depth_min << " " << internal << " " << max_d
         << " " << image.depth_max << std::endl;
   }

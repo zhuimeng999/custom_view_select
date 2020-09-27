@@ -20,6 +20,8 @@ struct Options {
   double angle_sigma1 = 1;
   double angle_sigma2 = 10;
   double angle_theta = 5;
+  double interval_scale = 1;
+  uint32_t max_d = 128;
 
   /*colmap*/
   double kTriangulationAnglePercentile = 75;
