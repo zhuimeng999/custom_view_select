@@ -1,5 +1,6 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+#include <fstream>
 
 #include "ColmapSparseInfo.hpp"
 #include "MVSNetViewSelect.hpp"
@@ -50,27 +51,42 @@ int main(int argc, char *argv[]) {
   }
 
   BOOST_LOG_TRIVIAL(info) << "write output stream";
-  MVSNetParser pairWriter;
-  pairWriter.imagePairs_.resize(num_image);
-  for (int i = 0; i < num_image; i++) {
-    for (int j = 0; j < options.num_view; j++) {
-      pairWriter.imagePairs_[i].emplace_back(score_sorted[i][j], score_matrix[i][score_sorted[i][j]]);
+  if(options.selection_only){
+    std::ofstream out(options.output_dir + "/patch-match.cfg", std::ios::trunc);
+    if (!out.is_open()) {
+      BOOST_LOG_TRIVIAL(error) << "can not open output file";
+      exit(EXIT_FAILURE);
     }
+    for (int i = 0; i < score_sorted.size(); i++) {
+      const auto &ref_img_name = csi.images_[csi.index2imageid[i]].name;
+      out << ref_img_name << std::endl;
+      if(score_matrix[i][score_sorted[i][0]] < 1e-8){
+        BOOST_LOG_TRIVIAL(error) << "no proper source view selected for image " << ref_img_name;
+        exit(EXIT_FAILURE);
+      }
+      out << csi.images_[csi.index2imageid[score_sorted[i][0]]].name;
+      for(int j = 1; j < options.num_view; j++){
+        if(score_matrix[i][score_sorted[i][j]] > 1e-8){
+          out << ", " << csi.images_[csi.index2imageid[score_sorted[i][j]]].name;
+        }
+      }
+      out << std::endl;
+    }
+    out.close();
+  } else {
+    MVSNetParser pairWriter;
+    pairWriter.imagePairs_.resize(num_image);
+    for (int i = 0; i < num_image; i++) {
+      for (int j = 0; j < options.num_view; j++) {
+        pairWriter.imagePairs_[i].emplace_back(score_sorted[i][j], score_matrix[i][score_sorted[i][j]]);
+      }
+    }
+    pairWriter.WritePair(options.output_dir + "/pair.txt");
+    pairWriter.WriteCams(options.output_dir + "/cams", csi, options.max_d);
+    pairWriter.WriteImages(options.output_dir + "/images", options.in_image_dir, csi);
   }
-  pairWriter.WritePair(options.output_dir + "/pair.txt");
-  pairWriter.WriteCams(options.output_dir + "/cams", csi, options.max_d);
-  pairWriter.WriteImages(options.output_dir + "/images", options.in_image_dir, csi);
+
   BOOST_LOG_TRIVIAL(info) << "done ...";
-//  MVSNetParser pairReader;
-//  pairReader.ReadPair("/home/lucius/data/workspace/pair.txt");
-//  for(int i = 0; i < pairWriter.imagePairs_.size(); i++){
-//    for(int j = 0; j < num_view; j++){
-//      if(pairWriter.imagePairs_[i][j].first != pairReader.imagePairs_[i][j].first){
-//        BOOST_LOG_TRIVIAL(error) << "mismatch " << i << " vs" << j;
-//        BOOST_LOG_TRIVIAL(error) << "    mismatch " << pairWriter.imagePairs_[i][j].first << " vs" << pairReader.imagePairs_[i][j].first;
-//        BOOST_LOG_TRIVIAL(error) << "    mismatch " << pairWriter.imagePairs_[i][j].second << " vs" << pairReader.imagePairs_[i][j].second;
-//      }
-//    }
-//  }
+
   return 0;
 }

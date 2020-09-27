@@ -14,18 +14,19 @@ void parse_commandline(int argc, char *argv[]) {
   try {
     po::options_description desc{"Options"};
     desc.add_options()("help,h", "Help screen")
-        ("in_image_dir", po::value<std::string>(), "in_image_dir")
-        ("sparse_dir", po::value<std::string>(), "sparse_dir")
-        ("output_dir", po::value<std::string>(), "output_dir")
-        ("alg", po::value<std::string>(), "alg{mvsnet, colmap}")
-        ("num_view", po::value<int>(), "num_view")
-        ("sigma1", po::value<double>(), "sigma1")
-        ("sigma2", po::value<double>(), "sigma2")
-        ("theta", po::value<double>(), "theta")
-        ("max_d", po::value<uint32_t>(), "max_d")
-        ("interval_scale", po::value<double>(), "interval_scale")
-        ("kTriangulationAnglePercentile", po::value<double>(), "kTriangulationAnglePercentile")
-        ("min_triangulation_angle", po::value<double>(), "min_triangulation_angle");
+        ("in_image_dir", po::value<std::string>(&options.in_image_dir), "in_image_dir")
+        ("sparse_dir", po::value<std::string>(&options.sparse_dir), "sparse_dir")
+        ("output_dir", po::value<std::string>(&options.output_dir), "output_dir")
+        ("alg", po::value<std::string>(&options.alg), "alg{mvsnet, colmap}")
+        ("selection_only", po::bool_switch(&options.selection_only), "selection_only")
+        ("num_view", po::value<uint64_t>(&options.num_view), "num_view")
+        ("sigma1", po::value<double>(&options.angle_sigma1), "sigma1")
+        ("sigma2", po::value<double>(&options.angle_sigma2), "sigma2")
+        ("theta", po::value<double>(&options.angle_theta), "theta")
+        ("max_d", po::value<uint32_t>(&options.max_d), "max_d")
+        ("interval_scale", po::value<double>(&options.interval_scale), "interval_scale")
+        ("kTriangulationAnglePercentile", po::value<double>(&options.kTriangulationAnglePercentile), "kTriangulationAnglePercentile")
+        ("min_triangulation_angle", po::value<double>(&options.min_triangulation_angle), "min_triangulation_angle");
 
     po::positional_options_description pos_desc;
     pos_desc.add("in_image_dir", 1).add("sparse_dir", 1).add("output_dir", 1);
@@ -44,24 +45,11 @@ void parse_commandline(int argc, char *argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    if (vm.count("in_image_dir") != 1) {
-      BOOST_LOG_TRIVIAL(error) << "you must provide output_dir";
+    if ((vm.count("in_image_dir") == 0) or (vm.count("sparse_dir") == 0) or (vm.count("output_dir"))) {
+      BOOST_LOG_TRIVIAL(error) << "you must provide [in_image_dir sparse_dir output_dir]";
       exit(EXIT_FAILURE);
-    } else {
-      options.in_image_dir = vm["in_image_dir"].as<std::string>();
     }
-    if (vm.count("sparse_dir") != 1) {
-      BOOST_LOG_TRIVIAL(error) << "you must provide sparse_dir";
-      exit(EXIT_FAILURE);
-    } else {
-      options.sparse_dir = vm["sparse_dir"].as<std::string>();
-    }
-    if (vm.count("output_dir") != 1) {
-      BOOST_LOG_TRIVIAL(error) << "you must provide output_dir";
-      exit(EXIT_FAILURE);
-    } else {
-      options.output_dir = vm["output_dir"].as<std::string>();
-    }
+
     if (vm.count("alg")) {
       options.alg = vm["alg"].as<std::string>();
       if ((options.alg != "mvsnet") and (options.alg != "colmap")) {
@@ -70,24 +58,6 @@ void parse_commandline(int argc, char *argv[]) {
       }
     }
 
-    if (vm.count("num_view")) {
-      options.num_view = vm["num_view"].as<double>();
-    }
-    if (vm.count("sigma1")) {
-      options.angle_sigma1 = vm["sigma1"].as<double>();
-    }
-    if (vm.count("sigma2")) {
-      options.angle_sigma2 = vm["sigma2"].as<double>();
-    }
-    if (vm.count("theta")) {
-      options.angle_theta = vm["theta"].as<double>();
-    }
-    if (vm.count("max_d")) {
-      options.max_d = vm["max_d"].as<uint32_t>();
-    }
-    if (vm.count("interval_scale")) {
-      options.interval_scale = vm["interval_scale"].as<double>();
-    }
     if (vm.count("kTriangulationAnglePercentile")) {
       options.kTriangulationAnglePercentile = vm["kTriangulationAnglePercentile"].as<double>();
       if ((options.kTriangulationAnglePercentile < 0) or (options.kTriangulationAnglePercentile > 100)) {
@@ -96,9 +66,7 @@ void parse_commandline(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
       }
     }
-    if (vm.count("min_triangulation_angle")) {
-      options.min_triangulation_angle = vm["min_triangulation_angle"].as<double>();
-    }
+
   }
   catch (const po::error &ex) {
     BOOST_LOG_TRIVIAL(error) << ex.what() << '\n';

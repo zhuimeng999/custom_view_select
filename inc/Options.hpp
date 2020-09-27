@@ -12,6 +12,7 @@ struct Options {
   std::string sparse_dir;
   std::string output_dir;
 
+  bool selection_only = false;
   std::string alg = "mvsnet";
   /*common options */
   uint64_t num_view = 10;
