@@ -8,7 +8,7 @@ arch=('i686' 'x86_64')
 url="https://zhuimeng999/custom_view_select.git"
 license=('GPL')
 groups=()
-depends=('opencv' 'boost' 'openmp')
+depends=('opencv' 'boost')
 makedepends=('git' 'cmake' 'eigen' )
 
 source=()

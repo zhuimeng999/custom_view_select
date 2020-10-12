@@ -37,7 +37,7 @@ void mvsnet_view_select(const ColmapSparseInfo &csi, std::vector<std::vector<dou
           if (tracks[j].second != tracks[k].second) {
             const auto &&displace = image.points2D[tracks[j].second] - image.points2D[tracks[k].second];
             BOOST_LOG_TRIVIAL(debug) << "point have two project point in same image: displace in image "
-                                     << displace.transpose() << " meam reprojection error "
+                                     << displace.transpose() << " mean reprojection error "
                                      << points3D_vector[i]->error;
           }
 
