@@ -231,7 +231,7 @@ void ColmapSparseInfo::ComputeExtraInfo() {
     image.extr = extr;
     image.intr = cameras_[image.camera_id].GetK();
     image.centor = -R.transpose() * image.Tvec;
-    image.direction = R.col(2);
+    image.direction = R.row(2);
     image.depth_min = depths[static_cast<int>(depths.size() * 0.01)];
     image.depth_max = depths[static_cast<int>(depths.size() * 0.99)];
   }
