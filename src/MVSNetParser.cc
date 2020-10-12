@@ -89,6 +89,40 @@ void MVSNetParser::WriteCams(const std::string &cam_dir, const ColmapSparseInfo 
   }
 }
 
+void MVSNetParser::WriteSparseDepth(const std::string &sp_dir, const ColmapSparseInfo &csi, int max_d) {
+  boost::filesystem::create_directory(sp_dir);
+#pragma omp parallel for default(none) shared(csi, sp_dir)
+  for (int index = 0; index < csi.index2imageid.size(); index++) {
+    auto image_id = csi.index2imageid[index];
+    const auto &image = csi.images_.at(image_id);
+
+    std::vector<Eigen::Vector4d> depths_info;
+    for(auto j = 0; j < image.point3D_ids.size(); j++){
+      const auto track_id = image.point3D_ids[j];
+      if(track_id != ColmapSparseInfo::kInvalidPoint3DId){
+        auto xyz = csi.points3D_.at(track_id).XYZ;
+        xyz = (image.extr * xyz.homogeneous()).hnormalized();
+        auto d = xyz.z();
+        xyz = image.intr*xyz;
+        auto xy = xyz.hnormalized();
+        auto reprojection_error = (image.points2D[j] - xy).norm();
+        depths_info.emplace_back(xy.x(), xy.y(), d, reprojection_error);
+      }
+    }
+
+    std::sort(depths_info.begin(), depths_info.end(),
+              [](const Eigen::Vector4d &x, const Eigen::Vector4d &y){ return x.z() < y.z();});
+    std::ofstream out(sp_dir + boost::str(boost::format("/%08d_sp.txt") % index), std::ios::trunc);
+    out.precision(17);
+    out << depths_info.size() << std::endl;;
+    for (auto & depth_info : depths_info) {
+      out << depth_info.x() << " " << depth_info.y()
+          << " " << depth_info.z() << " " << depth_info.w() << std::endl;
+    }
+    out.close();
+  }
+}
+
 void MVSNetParser::WriteImages(const std::string &out_image_dir, const std::string &in_image_dir,
                                const ColmapSparseInfo &csi) {
   boost::filesystem::create_directory(out_image_dir);

@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
     }
     pairWriter.WritePair(options.output_dir + "/pair.txt");
     pairWriter.WriteCams(options.output_dir + "/cams", csi, options.max_d);
+    pairWriter.WriteSparseDepth(options.output_dir + "/sparse_depth", csi, options.max_d);
     pairWriter.WriteImages(options.output_dir + "/images", options.in_image_dir, csi);
   }
 

@@ -17,6 +17,8 @@ public:
 
   void WriteCams(const std::string &cam_dir, const ColmapSparseInfo &csi, int max_d = 128);
 
+  void WriteSparseDepth(const std::string &sp_dir, const ColmapSparseInfo &csi, int max_d);
+
   void WriteImages(const std::string &out_image_dir, const std::string &in_image_dir, const ColmapSparseInfo &csi);
 
   std::vector<std::vector<std::pair<uint32_t, double>>> imagePairs_;
