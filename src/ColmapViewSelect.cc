@@ -117,7 +117,7 @@ void colmap_view_select(const ColmapSparseInfo &csi, std::vector<std::vector<dou
       const auto &pair_info = shared_points[i][k];
       if (pair_info.second.size() > 0) {
         const auto angle = Percentile(pair_info.second, options.kTriangulationAnglePercentile);
-        if (angle >= options.min_triangulation_angle) {
+        if (angle >= (options.min_triangulation_angle*M_PI/180.)) {
           score_matrix[i][k] = pair_info.first;
           score_matrix[k][i] = pair_info.first;
         }
