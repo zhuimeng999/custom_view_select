@@ -39,6 +39,7 @@ public:
 
     /* extra info */
     Eigen::Matrix4d extr;
+    Eigen::Matrix3d R;
     Eigen::Matrix3d intr;
     Eigen::Vector3d centor;
     Eigen::Vector3d direction;

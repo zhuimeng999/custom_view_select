@@ -50,6 +50,61 @@ int main(int argc, char *argv[]) {
               [&scores](int x, int y) { return scores[x] > scores[y]; });
   }
 
+  for(auto i = 0; i < csi.index2imageid.size(); i++){
+    auto image_id = csi.index2imageid[i];
+    const auto &image = csi.images_.at(image_id);
+    const auto &camera = csi.cameras_.at(image.camera_id);
+    std::vector<std::vector<Eigen::Vector3d>> ref_pos;
+    ref_pos.resize(camera.height);
+    for(auto h = 0; h < camera.height; h++){
+      const auto K_inv = image.intr.inverse();
+      ref_pos[h].resize(camera.width);
+      for(auto w = 0; w < camera.width; w++){
+        ref_pos[h][w] = K_inv*Eigen::Vector3d(w + 0.5, h + 0.5, 1.0);
+        ref_pos[h][w] = ref_pos[h][w].normalized();
+      }
+    }
+    for(auto j = 0; j < options.num_view; j++){
+      auto image_id_y = csi.index2imageid[score_matrix[i][j]];
+      const auto &image_y = csi.images_.at(image_id_y);
+      const auto &camera_y = csi.cameras_.at(image_y.camera_id);
+      const auto relative_R = image_y.R*image.R.transpose();
+      const auto relative_T = image_y.Tvec - relative_R*image.Tvec;
+      const auto centor = relative_T.hnormalized();
+
+      const auto src_K_inv = image_y.intr.inverse();
+      const auto pos_min = (src_K_inv*Eigen::Vector3d(0, 0, 1.)).hnormalized();
+      const auto pos_max = (src_K_inv*Eigen::Vector3d(camera_y.width, camera_y.height, 1.)).hnormalized();
+      for(auto h = 0; h < camera.height; h++){
+        for(auto w = 0; w < camera.width; w++) {
+          const auto src_pos = relative_R*ref_pos[h][w];
+          const Eigen::Vector2d src_proj_pos = src_pos.hnormalized();
+          Eigen::Vector2d plane_direction = centor - src_proj_pos;
+          const auto distance = plane_direction.norm();
+          plane_direction = plane_direction/distance;
+          const auto alpha = src_pos.z()/relative_T.z();
+          {
+            Eigen::Vector2d range_min = (pos_min - src_proj_pos).array()/plane_direction.array();
+            Eigen::Vector2d range_max = (pos_max - src_proj_pos).array()/plane_direction.array();
+            if(plane_direction.x() > 0){
+              if(plane_direction.y() > 0){
+                Eigen::Vector2d(range_min.maxCoeff(), range_max.minCoeff());
+              } else {
+                Eigen::Vector2d(std::max(range_min.maxCoeff(), range_max.maxCoeff()), std::numeric_limits<double>::infinity());
+              }
+            } else {
+              if(plane_direction.y() > 0){
+                Eigen::Vector2d(std::numeric_limits<double>::infinity(), std::min(range_min.minCoeff(), range_max.minCoeff()));
+              } else {
+                Eigen::Vector2d(range_max.maxCoeff(),range_min.minCoeff());
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   BOOST_LOG_TRIVIAL(info) << "write output stream";
   if(options.selection_only){
     std::ofstream out(options.output_dir + "/patch-match.cfg", std::ios::trunc);

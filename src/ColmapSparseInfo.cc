@@ -229,6 +229,7 @@ void ColmapSparseInfo::ComputeExtraInfo() {
     }
     std::sort(depths.begin(), depths.end());
     image.extr = extr;
+    image.R = R;
     image.intr = cameras_[image.camera_id].GetK();
     image.centor = -R.transpose() * image.Tvec;
     image.direction = R.row(2);
