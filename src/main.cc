@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
               [&scores](int x, int y) { return scores[x] > scores[y]; });
   }
 
+  BOOST_LOG_TRIVIAL(info) << "compute disparity ...";
   for(auto i = 0; i < csi.index2imageid.size(); i++){
     auto image_id = csi.index2imageid[i];
     const auto &image = csi.images_.at(image_id);
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
       }
     }
     for(auto j = 0; j < options.num_view; j++){
-      auto image_id_y = csi.index2imageid[score_matrix[i][j]];
+      auto image_id_y = csi.index2imageid[score_sorted[i][j]];
       const auto &image_y = csi.images_.at(image_id_y);
       const auto &camera_y = csi.cameras_.at(image_y.camera_id);
       const auto relative_R = image_y.R*image.R.transpose();
@@ -75,7 +76,11 @@ int main(int argc, char *argv[]) {
       const auto src_K_inv = image_y.intr.inverse();
       const auto pos_min = (src_K_inv*Eigen::Vector3d(0, 0, 1.)).hnormalized();
       const auto pos_max = (src_K_inv*Eigen::Vector3d(camera_y.width, camera_y.height, 1.)).hnormalized();
+
+      std::vector<std::vector<Eigen::Vector2d>> disparity_map;
+      disparity_map.resize(camera.height);
       for(auto h = 0; h < camera.height; h++){
+        disparity_map[h].resize(camera.width);
         for(auto w = 0; w < camera.width; w++) {
           const auto src_pos = relative_R*ref_pos[h][w];
           const Eigen::Vector2d src_proj_pos = src_pos.hnormalized();
@@ -88,20 +93,21 @@ int main(int argc, char *argv[]) {
             Eigen::Vector2d range_max = (pos_max - src_proj_pos).array()/plane_direction.array();
             if(plane_direction.x() > 0){
               if(plane_direction.y() > 0){
-                Eigen::Vector2d(range_min.maxCoeff(), range_max.minCoeff());
+                disparity_map[h][w] = Eigen::Vector2d(range_min.maxCoeff(), range_max.minCoeff());
               } else {
-                Eigen::Vector2d(std::max(range_min.maxCoeff(), range_max.maxCoeff()), std::numeric_limits<double>::infinity());
+                disparity_map[h][w] = Eigen::Vector2d(std::max(range_min.maxCoeff(), range_max.maxCoeff()), std::numeric_limits<double>::infinity());
               }
             } else {
               if(plane_direction.y() > 0){
-                Eigen::Vector2d(std::numeric_limits<double>::infinity(), std::min(range_min.minCoeff(), range_max.minCoeff()));
+                disparity_map[h][w] = Eigen::Vector2d(-std::numeric_limits<double>::infinity(), std::min(range_min.minCoeff(), range_max.minCoeff()));
               } else {
-                Eigen::Vector2d(range_max.maxCoeff(),range_min.minCoeff());
+                disparity_map[h][w] = Eigen::Vector2d(range_max.maxCoeff(),range_min.minCoeff());
               }
             }
           }
         }
       }
+      BOOST_LOG_TRIVIAL(info) << "processing " <<  image_y.name;
     }
   }
 
