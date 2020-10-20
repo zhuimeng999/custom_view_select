@@ -4,3 +4,4 @@
 /scripts/arch/src/
 /scripts/arch/custom_view_select*.pkg.tar.zst
 /cmake-build-release/
+/build/

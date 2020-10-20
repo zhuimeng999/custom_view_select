@@ -10,7 +10,7 @@ add_executable(${PROJECT_NAME} src/main.cc
   src/MVSNetParser.cc inc/MVSNetParser.hpp
   src/Options.cc inc/Options.hpp
   src/MVSNetViewSelect.cc inc/MVSNetViewSelect.hpp
-  src/ColmapViewSelect.cc inc/ColmapViewSelect.hpp)
+  src/ColmapViewSelect.cc inc/ColmapViewSelect.hpp src/RangeCalculator.cc inc/RangeCalculator.hpp)
 
 find_package(Eigen3 REQUIRED)
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIRS})
