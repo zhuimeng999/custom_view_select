@@ -59,9 +59,6 @@ static inline void solve3dxy(const double pxy, const double pz, const double nxy
       range.y() = val2;
     }
   }
-  if(range.x() < 0.){
-    range.x() = 0.;
-  }
 }
 
 static inline void solve2d(const Eigen::Vector2d &projection, const Eigen::Vector2d &direction,
@@ -97,9 +94,6 @@ static inline void solve2d(const Eigen::Vector2d &projection, const Eigen::Vecto
       range.y() = std::min(range_wmin, range_hmin);
     }
   }
-  if(range.x() < 0.){
-    range.x() = 0.;
-  }
 }
 
 void compute_range(const ColmapSparseInfo &csi, std::vector<std::vector<int>> &score_sorted){
@@ -122,35 +116,42 @@ void compute_range(const ColmapSparseInfo &csi, std::vector<std::vector<int>> &s
       auto image_id_y = csi.index2imageid[score_sorted[i][j]];
       const auto &image_y = csi.images_.at(image_id_y);
       const auto &camera_y = csi.cameras_.at(image_y.camera_id);
-      const auto relative_R = image_y.R*image.R.transpose();
+      const Eigen::Matrix3d relative_R = image_y.R*image.R.transpose();
       const Eigen::Vector3d relative_T = image_y.Tvec - relative_R*image.Tvec;
       /* here we do not check whether relative_T.z() == 0., we check later */
       const Eigen::Vector2d center = relative_T.hnormalized();
 
-      const auto src_K_inv = image_y.intr.inverse();
+      const Eigen::Matrix3d src_K_inv = image_y.intr.inverse();
       const Eigen::Vector3d pos_min = src_K_inv*Eigen::Vector3d(0, 0, 1.);
       const Eigen::Vector3d pos_max = src_K_inv*Eigen::Vector3d(camera_y.width, camera_y.height, 1.);
-      BOOST_LOG_TRIVIAL(info) << "processing " <<  image_y.name << " " << pos_min << " " << pos_max;
+      BOOST_LOG_TRIVIAL(info) << "processing " <<  image_y.name;
 
       std::vector<std::vector<Eigen::Vector2d>> solutions(camera.height);
       for(auto h = 0; h < camera.height; h++){
         solutions[h].resize(camera.width);
         for(auto w = 0; w < camera.width; w++){
-          const Eigen::Vector3d src_pos = relative_R*ref_pos[h][w];
+          Eigen::Vector3d src_pos = relative_R*ref_pos[h][w];
           Eigen::Vector2d range1, range2;
           solve3dxy(relative_T.x(), relative_T.z(), src_pos.x(), src_pos.z(), pos_min.x(), pos_max.x(), range1);
           solve3dxy(relative_T.y(), relative_T.z(), src_pos.y(), src_pos.z(), pos_min.y(), pos_max.y(), range2);
           double min_val = std::max(range1.x(), range2.x());
           double max_val = std::min(range1.y(), range2.y());
-
+          if(src_pos.z() > 0.){
+            min_val = std::max(min_val, -relative_T.z()/src_pos.z());
+          } else {
+            max_val = std::min(max_val, -relative_T.z()/src_pos.z());
+          }
+          min_val = std::max(min_val, 0.);
           assert(src_pos.z() != 0);
-          Eigen::Vector2d projection = src_pos.hnormalized();
+          auto projection = src_pos.hnormalized();
           Eigen::Vector2d direction;
           if(relative_T.z() == 0.){
             direction.x() = relative_T.x();
             direction.y() = relative_T.y();
-          } else {
+          } else if(relative_T.z() > 0.) {   /* projection direction along depth radial, determined by the sign of z */
             direction = center - projection;
+          } else { /* projection direction along depth radial, determined by the sign of z */
+            direction = projection - center;
           }
           auto distance = direction.norm();
           direction = direction/distance;
@@ -160,19 +161,27 @@ void compute_range(const ColmapSparseInfo &csi, std::vector<std::vector<int>> &s
           if(range.x() < 0.){
             range.x() = 0.;
           }
+          if(relative_T.z() > 0){ /* we can not cross the centor of camera when the direction point to centor */
+            range.y() = std::min(range.y(), distance);
+          }
 
           if(min_val >= max_val){
             assert((range.x() >= range.y()) or (range.y() <= 0));
           } else {
-            auto disparity_min = distance/(1. + min_val*src_pos.z()/relative_T.z());
-            auto disparity_max = distance/(1. + max_val*src_pos.z()/relative_T.z());
+            assert(range.x() <= range.y());
+            auto disparity_min = distance/std::abs(1. + min_val*src_pos.z()/relative_T.z());
+            auto disparity_max = distance/std::abs(1. + max_val*src_pos.z()/relative_T.z());
             if(disparity_min > disparity_max){
               std::swap(disparity_min, disparity_max);
             }
             auto err1 = disparity_min - range.x();
             auto err2 = disparity_max - range.y();
-            assert(abs(err1/distance) < 1e-10);
-            assert(abs(err2/distance) < 1e-10);
+            if((abs(err1/distance) > 1e-8) or (abs(err2/distance) > 1e-8)){
+              BOOST_LOG_TRIVIAL(info) << pos_min.transpose() << " # " << pos_max.transpose();
+              BOOST_LOG_TRIVIAL(info) << relative_T.transpose() << " # " << src_pos.transpose();
+              BOOST_LOG_TRIVIAL(info) << range.transpose() << " # " << disparity_min << " " << disparity_max << " # " << min_val << " " << max_val;
+              exit(EXIT_FAILURE);
+            }
           }
         }
       }
